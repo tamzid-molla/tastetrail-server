@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 const app = express();
 import userRoute from "./features/user/userRoute.js"
+import recipeRouter from "./features/recipe/recipeRoute.js";
 import { errorHandlerMiddleware } from './middleware/errorHandler.js';
 
 //middlewares 
@@ -13,7 +14,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-//coockie parser 
+//cookie parser 
 app.use(cookieParser());
 
 // Define a route for the app
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 
 //others routes
 app.use("/api/user", userRoute);
+app.use("/api/recipe", recipeRouter);
 
 //Global error handler
 app.use(errorHandlerMiddleware);
