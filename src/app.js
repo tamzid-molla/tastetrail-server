@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 const app = express();
+import userRoute from "./features/user/userRoute.js"
 
 //middlewares 
 app.use(cors({
@@ -20,7 +21,7 @@ app.get("/", (req, res) => {
 });
 
 //others routes
-
+app.use("/api/user", userRoute);
 
 //Global error handler
 
