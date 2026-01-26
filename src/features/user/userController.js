@@ -19,6 +19,19 @@ export const registerUser = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     success: true,
     message: "User created successfully",
-    user: newUser,
   });
+});
+
+//login user
+export const loginUser = asyncHandler(async (req, res, next) => {
+  if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
+  const { email, password } = req.body;
+  if (!email || !password) return next(new ErrorHandler("Please provide all required information", 400));
+  const user = await User.findOne({ email }).select("+password");
+  if (!user) return next(new ErrorHandler("Invalid email or password", 400));
+  //compare password
+  const isPasswordMatch = await user.comparePassword(password);
+  if (!isPasswordMatch) return next(new ErrorHandler("Invalid email or password", 400));
+  user.password = undefined;
+  generateToken(user, 200, "Login successful", res);
 });
