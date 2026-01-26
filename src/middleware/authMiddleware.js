@@ -1,6 +1,7 @@
 import { User } from "../features/user/userModel.js";
 import { asyncHandler } from "./asyncHandler.js";
 import jwt from "jsonwebtoken";
+import ErrorHandler from "./errorHandler.js";
 
 const isAuthenticated = asyncHandler(async (req, res, next) => {
     const token = req.cookies?.token;
