@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import config from "../../config/config";
 
 const userSchema = new mongoose.Schema(
     {
@@ -63,5 +64,9 @@ const userSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+userSchema.methods.generateToken = function () {
+    return jwt.sign({ _id: this._id }, config.JWT_SECRET, { expiresIn: "7d" });
+};
 
 export const User = mongoose.model("User", userSchema);
