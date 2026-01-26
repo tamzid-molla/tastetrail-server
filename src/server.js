@@ -1,5 +1,6 @@
 import app from "./app.js";
 import config from "./config/config.js";
+import connectDb from "./config/db.js";
 
 let server;
 
@@ -7,7 +8,7 @@ const startServer = async () => {
   //access port
   const port = config.PORT || 1100;
   //Database connection
-  
+   await connectDb();
     
   //server listening
   server = app.listen(port, () => {
