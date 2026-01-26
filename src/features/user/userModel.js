@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import config from "../../config/config.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 
 const userSchema = new mongoose.Schema(
@@ -67,6 +68,18 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+//hashed password 
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+});
+
+//compare password 
+userSchema.methods.comparePassword = async function (password) {
+    return await bcrypt.compare(password, this.password);
+};
+
+//generate token
 userSchema.methods.generateToken = function () {
     return jwt.sign({ _id: this._id }, config.JWT_SECRET, { expiresIn: "7d" });
 };
