@@ -35,3 +35,13 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   user.password = undefined;
   generateToken(user, 200, "Login successful", res);
 });
+
+//get current user
+export const getCurrentUser = asyncHandler(async (req, res, next) => {
+  const user = req.user;
+  if (!user) return next(new ErrorHandler("User not found", 404));
+  res.status(200).json({
+    success: true,
+    user,
+  });
+});
