@@ -7,6 +7,7 @@ import recipeRouter from "./features/recipe/recipeRoute.js";
 import categoryRouter from "./features/category/categoryRoute.js";
 import cuisineRouter from "./features/cuisine/cuisineRoute.js";
 import reviewRouter from "./features/review/reviewRoute.js";
+import mealPlanRouter from "./features/MealPlan/mealPlanRoute.js";
 import { errorHandlerMiddleware } from './middleware/errorHandler.js';
 
 //middlewares 
@@ -31,6 +32,7 @@ app.use("/api/recipe", recipeRouter);
 app.use("/api/category", categoryRouter)
 app.use("/api/cuisine", cuisineRouter);
 app.use("/api/review", reviewRouter);
+app.use("/api/mealPlan", mealPlanRouter)
 
 //Global error handler
 app.use(errorHandlerMiddleware);
