@@ -73,3 +73,21 @@ export const approveReview = asyncHandler(async (req, res, next) => {
     review,
   });
 });
+
+//reject review
+export const rejectReview = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id) {
+    return next(new ErrorHandler("Please provide review id", 400));}
+  const review = await Review.findById(id);
+  if (!review) {
+    return next(new ErrorHandler("Review not found", 404));
+  }
+  review.status = "rejected";
+  await review.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Review rejected successfully",
+  });
+});
