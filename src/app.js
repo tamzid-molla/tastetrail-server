@@ -5,6 +5,7 @@ const app = express();
 import userRoute from "./features/user/userRoute.js"
 import recipeRouter from "./features/recipe/recipeRoute.js";
 import categoryRouter from "./features/category/categoryRoute.js";
+import cuisineRouter from "./features/cuisine/cuisineRoute.js";
 import { errorHandlerMiddleware } from './middleware/errorHandler.js';
 
 //middlewares 
@@ -27,6 +28,7 @@ app.get("/", (req, res) => {
 app.use("/api/user", userRoute);
 app.use("/api/recipe", recipeRouter);
 app.use("/api/category", categoryRouter)
+app.use("/api/cuisine", cuisineRouter)
 
 //Global error handler
 app.use(errorHandlerMiddleware);

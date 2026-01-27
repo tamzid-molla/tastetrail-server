@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import ErrorHandler from "../../middleware/errorHandler.js";
 import { Recipe } from "./recipeModel.js";
+import { Category } from "../category/categoryModel.js";
 
 export const createRecipe = asyncHandler(async (req, res, next) => {
     const { title, ingredients, instructions, category, cuisine } = req.body;
@@ -15,8 +16,8 @@ export const createRecipe = asyncHandler(async (req, res, next) => {
   if (!mongoose.Types.ObjectId.isValid(cuisine))
     return next(new ErrorHandler("Invalid cuisine", 400));
 
-//   const categoryExists = await Category.findById(category);
-//   if (!categoryExists) return next(new ErrorHandler("Category not found", 404));
+  const categoryExists = await Category.findById(category);
+  if (!categoryExists) return next(new ErrorHandler("Category not found", 404));
 
 //   const cuisineExists = await Cuisine.findById(cuisine);
 //   if (!cuisineExists) return next(new ErrorHandler("Cuisine not found", 404));
