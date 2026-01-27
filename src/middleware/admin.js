@@ -1,4 +1,5 @@
 import { asyncHandler } from "./asyncHandler.js";
+import ErrorHandler from "./errorHandler.js";
 
 const adminOnly = asyncHandler(async (req, res, next) => { 
     const user = req.user;
