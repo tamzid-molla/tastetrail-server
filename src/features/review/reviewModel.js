@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema({
   user: {
@@ -24,7 +24,7 @@ const reviewSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "approved"],
+    enum: ["pending", "approved", "rejected"],
     default: "pending"
   }
 }, { timestamps: true });
