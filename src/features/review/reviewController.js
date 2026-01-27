@@ -37,7 +37,7 @@ export const getAllReviews = asyncHandler(async (req, res, next) => {
   });
 });
 
-//get reviews by recipe
+//get reviews by recipe only approved reviews
 export const getReviewsByRecipe = asyncHandler(async (req, res, next) => {
   const { recipeID } = req.params;
   if (!recipeID) return next(new ErrorHandler("cannot find reviews for this recipe", 400));
@@ -47,5 +47,29 @@ export const getReviewsByRecipe = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     reviews,
+  });
+});
+
+
+//admin approve review
+export const approveReview = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  if (!id) {
+    return next(new ErrorHandler("Please provide review id", 400));
+    };
+  const review = await Review.findById(id);
+  if (!review) {
+    return next(new ErrorHandler("Review not found", 404));
+  }
+  if (review?.status === "approved") {
+    return next(new ErrorHandler("Review already approved", 400));
+  }
+  review.status = "approved";
+  await review.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Review approved successfully",
+    review,
   });
 });
