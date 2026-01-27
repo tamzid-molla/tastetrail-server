@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 const app = express();
 import userRoute from "./features/user/userRoute.js"
 import recipeRouter from "./features/recipe/recipeRoute.js";
+import categoryRouter from "./features/category/categoryRoute.js";
 import { errorHandlerMiddleware } from './middleware/errorHandler.js';
 
 //middlewares 
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 //others routes
 app.use("/api/user", userRoute);
 app.use("/api/recipe", recipeRouter);
+app.use("/api/category", categoryRouter)
 
 //Global error handler
 app.use(errorHandlerMiddleware);
