@@ -5,8 +5,9 @@ const categorySchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
+        minlength: [3, "Name must be at least 3 characters long"],
+        trim: true
     },
 },{timestamps: true})
 
-const Category = mongoose.model("Category", categorySchema);
-export default Category
+export const Category = mongoose.model("Category", categorySchema);
