@@ -1,5 +1,6 @@
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import ErrorHandler from "../../middleware/errorHandler.js";
+import { capitalizeFirstLetter } from "../../utils/formatText.js";
 import { Recipe } from "../recipe/recipeModel.js";
 import { Category } from "./categoryModel.js";
 
@@ -7,9 +8,12 @@ export const createCategory = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new ErrorHandler("Please provide a name for the category", 400));
   const { name } = req.body;
   if (!name) return next(new ErrorHandler("Please provide a name for the category", 400));
-  const isExists = await Category.findOne({ name });
+  //format name
+  const formattedName = capitalizeFirstLetter(name);
+
+  const isExists = await Category.findOne({ name: { $regex: `^${formattedName}$`, $options: 'i' } });
   if (isExists) return next(new ErrorHandler("Category already exists", 400));
-  const category = await Category.create({ name });
+  const category = await Category.create({ name: formattedName });
   res.status(201).json({
     success: true,
     message: "Category created successfully",
@@ -46,10 +50,12 @@ export const updateCategory = asyncHandler(async (req, res, next) => {
   const { name } = req.body;
   if (!name) return next(new ErrorHandler("Please provide a new category name", 400));
   if (!id) return next(new ErrorHandler("Please provide a category id", 400));
+  //format name
+  const formattedName = capitalizeFirstLetter(name);
   //is exists
-  const isExists = await Category.findOne({ name });
+  const isExists = await Category.findOne({ name: { $regex: `^${formattedName}$`, $options: 'i' } });
   if (isExists) return next(new ErrorHandler("Category already exists", 400));
-  const category = await Category.findByIdAndUpdate(id, { name }, { new: true, runValidators: true });
+  const category = await Category.findByIdAndUpdate(id, { name: formattedName }, { new: true, runValidators: true });
   if (!category) return next(new ErrorHandler("Category not found", 404));
   res.status(200).json({
     success: true,
