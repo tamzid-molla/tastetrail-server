@@ -18,6 +18,7 @@ const recipeSchema = new mongoose.Schema({
   calories: { type: Number }, 
   image: { type: String },
   isFeatured: { type: Boolean, default: false },
+  status: { type: String, default: "active", enum: ["active", "inactive"] },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
