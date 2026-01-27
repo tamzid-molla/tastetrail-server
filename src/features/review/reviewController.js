@@ -1,5 +1,6 @@
 import { asyncHandler } from "../../middleware/asyncHandler.js";
 import ErrorHandler from "../../middleware/errorHandler.js";
+import { updateRecipeRating } from "../../utils/updateRecipeRating.js";
 import { Recipe } from "../recipe/recipeModel.js";
 import { Review } from "./reviewModel.js";
 
@@ -65,7 +66,9 @@ export const approveReview = asyncHandler(async (req, res, next) => {
     return next(new ErrorHandler("Review already approved", 400));
   }
   review.status = "approved";
-  await review.save();
+    await review.save();
+    
+    await updateRecipeRating(review.recipe.toString());
 
   res.status(200).json({
     success: true,

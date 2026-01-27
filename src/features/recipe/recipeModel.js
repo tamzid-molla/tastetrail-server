@@ -14,6 +14,15 @@ const recipeSchema = new mongoose.Schema({
     ref: "Cuisine",
     required: true,
   },
+  averageRating: {
+  type: Number,
+  default: 0,
+},
+
+totalReviews: {
+  type: Number,
+  default: 0,
+},
   cookingTime: { type: Number }, 
   calories: { type: Number }, 
   image: { type: String },

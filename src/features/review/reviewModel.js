@@ -29,4 +29,8 @@ const reviewSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+//validate that one user can review only once for one recipe
+reviewSchema.index({ user: 1, recipe: 1 }, { unique: true });
+
+
 export const Review = mongoose.model("Review", reviewSchema);
