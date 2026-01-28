@@ -4,7 +4,11 @@ import generateToken from "../../utils/generateToken.js";
 import { User } from "./userModel.js";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
-  if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
+  // if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
+
+  console.log(req.body);
+  console.log(req.file);
+  return
 
   const { fullName, email, password, profilePhoto } = req.body;
   if (!fullName || !email || !password) {
