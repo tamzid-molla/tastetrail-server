@@ -1,7 +1,6 @@
 import cloudinary from "cloudinary";
-import fs from "fs";
 import dotenv from 'dotenv';
-import config from "./config";
+import config from "./config.js";
 dotenv.config();
 
 cloudinary.v2.config({
@@ -9,3 +8,5 @@ cloudinary.v2.config({
   api_key: config.CLOUD_API_KEY,
   api_secret:config.CLOUD_API_SECRET 
 });
+
+export default cloudinary
