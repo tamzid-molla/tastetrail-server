@@ -15,16 +15,22 @@ import {
   getUserNutritionSummary,
   setUserYearlyGoal,
   getUserCookingAnalytics,
+  uploadUserProfilePhoto,
+  uploadRecipeImage,
 } from "./userController.js";
 import isAuthenticated from "../../middleware/authMiddleware.js";
 import adminOnly from "../../middleware/admin.js";
 import upload from "../../middleware/uploadMiddleware.js";
 const router = express.Router();
 
-router.post("/auth/register", upload.single("profilePhoto"), registerUser);
+// Upload routes (no authentication required for uploads)
+router.post("/upload/profile-photo", upload.single("file"), uploadUserProfilePhoto);
+router.post("/upload/recipe-image", upload.single("file"), uploadRecipeImage);
+
+router.post("/auth/register", registerUser);
 router.post("/auth/login", loginUser);
 router.get("/auth/me", isAuthenticated, getCurrentUser);
-router.get("/auth/count", isAuthenticated, adminOnly, getUserCount); 
+router.get("/auth/count", isAuthenticated, adminOnly, getUserCount);
 router.post("/auth/logout", isAuthenticated, logoutUser);
 
 // Normal user: cookbook (saved recipes)
@@ -44,9 +50,9 @@ router.post("/yearly-goal", isAuthenticated, setUserYearlyGoal);
 router.get("/cooking-analytics", isAuthenticated, getUserCookingAnalytics);
 
 // Admin routes
-router.get("/", isAuthenticated, adminOnly, getAllUsers); 
-router.put("/:id/role", isAuthenticated, adminOnly, updateUserRole); 
-router.put("/:id/suspend", isAuthenticated, adminOnly, suspendUser); 
-router.put("/:id/activate", isAuthenticated, adminOnly, activateUser); 
+router.get("/", isAuthenticated, adminOnly, getAllUsers);
+router.put("/:id/role", isAuthenticated, adminOnly, updateUserRole);
+router.put("/:id/suspend", isAuthenticated, adminOnly, suspendUser);
+router.put("/:id/activate", isAuthenticated, adminOnly, activateUser);
 
 export default router;

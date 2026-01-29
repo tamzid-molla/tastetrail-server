@@ -9,32 +9,28 @@ import fs from "fs";
 import mongoose from "mongoose";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
-  if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
+  const { fullName, email, password, profilePhoto } = req.body;
+  console.log(fullName, email, profilePhoto);
+  if (!fullName || !email || !password) return next(new ErrorHandler("All fields are required", 400));
 
-  const { fullName, email, password } = req.body;
-  if (!fullName || !email || !password) {
-    return next(new ErrorHandler("All fields are required", 400));
-  }
-
-  let imageUrl = "";
-  if (req.file) {
-    const result = await cloudinary.v2.uploader.upload(req.file.path, {
-      folder: "TasteTrailUsers",
-      quality: "auto",
-      fetch_format: "auto",
-    });
-    imageUrl = result.secure_url;
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.error("Failed to delete local file:", err);
-    });
-  }
-
-  //find user
+  // Check if user already exists
   const isUserExists = await User.findOne({ email });
   if (isUserExists) return next(new ErrorHandler("User already exists", 400));
-  //create user
-  const newUser = await User.create({ fullName, email, password, profilePhoto: imageUrl || "" });
-  if (!newUser) return next(new ErrorHandler("Something went wrong Please try again later", 500));
+
+  // Validate Cloudinary URL if provided
+  let imageUrl = "";
+  if (profilePhoto) {
+    // Basic Cloudinary URL validation
+    if (!profilePhoto.startsWith("https://res.cloudinary.com/")) {
+      return next(new ErrorHandler("Invalid Cloudinary image URL", 400));
+    }
+    imageUrl = profilePhoto;
+  }
+
+  // Create user
+  const newUser = await User.create({ fullName, email, password, profilePhoto: imageUrl });
+  if (!newUser) return next(new ErrorHandler("Something went wrong. Please try again later", 500));
+
   res.status(201).json({
     success: true,
     message: "User created successfully",
@@ -70,7 +66,7 @@ export const getUserCount = asyncHandler(async (req, res, next) => {
   const count = await User.countDocuments();
   const now = new Date();
   const end = new Date(now);
-  const day = end.getDay(); 
+  const day = end.getDay();
   const diffToFriday = (5 - day + 7) % 7;
   end.setHours(23, 59, 59, 999);
   end.setDate(end.getDate() + diffToFriday);
@@ -142,6 +138,62 @@ export const updateUserRole = asyncHandler(async (req, res, next) => {
     message: "User role updated successfully",
     user,
   });
+});
+
+// Signed Cloudinary upload for user profile photos
+export const uploadUserProfilePhoto = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ErrorHandler("No file uploaded", 400));
+  }
+
+  try {
+    const result = await cloudinary.v2.uploader.upload(req.file.path, {
+      folder: "TasteTrailUsers",
+      quality: "auto",
+      fetch_format: "auto",
+    });
+
+    // Delete local file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Failed to delete local file:", err);
+    });
+
+    res.status(200).json({
+      success: true,
+      url: result.secure_url,
+    });
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return next(new ErrorHandler("Failed to upload image", 500));
+  }
+});
+
+// Signed Cloudinary upload for recipe images
+export const uploadRecipeImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ErrorHandler("No file uploaded", 400));
+  }
+
+  try {
+    const result = await cloudinary.v2.uploader.upload(req.file.path, {
+      folder: "TasteTrailRecipes",
+      quality: "auto",
+      fetch_format: "auto",
+    });
+
+    // Delete local file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error("Failed to delete local file:", err);
+    });
+
+    res.status(200).json({
+      success: true,
+      url: result.secure_url,
+    });
+  } catch (error) {
+    console.error("Cloudinary upload error:", error);
+    return next(new ErrorHandler("Failed to upload image", 500));
+  }
 });
 
 // Suspend user
@@ -265,8 +317,8 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   const user = await User.findById(userId);
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  const startDate = new Date(targetYear, 0, 1); 
-  const endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999); 
+  const startDate = new Date(targetYear, 0, 1);
+  const endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999);
 
   const cookedMeals = await MealPlan.find({
     user: userId,
@@ -350,13 +402,13 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   const cuisineData = Object.entries(cuisineCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5); 
+    .slice(0, 5);
 
   // Format category data
   const categoryData = Object.entries(categoryCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5); 
+    .slice(0, 5);
 
   const totalMeals = cookedMeals.length;
 
@@ -414,7 +466,6 @@ export const getUserNutritionSummary = asyncHandler(async (req, res, next) => {
 
   // Calculate averages
   const avgCaloriesPerMeal = totalMeals > 0 ? Math.round(totalCalories / totalMeals) : 0;
-
 
   // Protein 20% of calories, Carbs 50%, Fat 30%
   const proteinGrams = Math.round((totalCalories * 0.2) / 4); // 4 cal per gram
