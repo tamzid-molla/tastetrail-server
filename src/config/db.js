@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import config from './config.js';
 
 const connectDb = async () => {
-    const uri = config.MONGO_URI || "mongodb+srv://assignment-11:zMRv0A5j4FOr6bIW@cluster0.cykplbd.mongodb.net/tastetrail?retryWrites=true&w=majority&appName=Cluster0";
+    const uri = config.MONGO_URI;
     if (!uri) console.log("Mongo URI is not defined");
    try {
        await mongoose.connect(uri,);
