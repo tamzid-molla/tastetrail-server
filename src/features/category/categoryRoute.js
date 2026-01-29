@@ -12,7 +12,7 @@ import isAuthenticated from "../../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", isAuthenticated, adminOnly, createCategory);
+router.post("/", createCategory);
 // List categories is needed for normal users (filters)
 router.get("/", isAuthenticated, allCategory);
 router.get("/count", isAuthenticated, adminOnly, getCategoryCount); 
