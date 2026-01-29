@@ -180,7 +180,6 @@ export const activateUser = asyncHandler(async (req, res, next) => {
 
 export const getSavedRecipes = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
-  console.log(userId);
   const user = await User.findById(userId).populate({
     path: "savedRecipes",
     match: { status: "active" },
@@ -227,6 +226,35 @@ export const getUserCookingStats = asyncHandler(async (req, res, next) => {
       totalMealsCooked: user.cookingStats?.totalMealsCooked || 0,
       recentCookedMeals: recentCookedMeals || [],
     },
+  });
+});
+
+// Set user yearly goal
+export const setUserYearlyGoal = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { targetMeals } = req.body;
+
+  if (!targetMeals || targetMeals <= 0) {
+    throw new ErrorHandler("Target meals must be greater than 0", 400);
+  }
+
+  const year = new Date().getFullYear();
+
+  const update = {
+    "yearlyGoal.targetMeals": targetMeals,
+    "yearlyGoal.year": year,
+    "yearlyGoal.createdAt": new Date(),
+  };
+
+  const result = await User.updateOne({ _id: userId }, { $set: update });
+
+  if (result.matchedCount === 0) {
+    throw new ErrorHandler("User not found", 404);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `Yearly goal set to ${targetMeals} meals for ${year}`,
   });
 });
 
@@ -338,11 +366,20 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
 
   const totalMeals = cookedMeals.length;
 
+  // Get user's yearly goal
+  const userGoal = user.yearlyGoal;
+  const goal = userGoal?.year === targetYear ? userGoal.targetMeals : 0;
+  const progressPercentage = goal > 0 ? Math.min(Math.round((totalMeals / goal) * 100), 100) : 0;
+  const mealsRemaining = Math.max(0, goal - totalMeals);
+
   res.status(200).json({
     success: true,
     analytics: {
       year: targetYear,
       totalMeals,
+      goal,
+      progressPercentage,
+      mealsRemaining,
       streak: {
         current: currentStreak,
         max: maxStreak,

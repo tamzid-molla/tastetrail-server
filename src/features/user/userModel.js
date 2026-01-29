@@ -59,6 +59,13 @@ const userSchema = new mongoose.Schema(
 
     savedRecipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipe" }],
 
+    // Yearly cooking goal
+    yearlyGoal: {
+      targetMeals: { type: Number, default: 0 },
+      year: { type: Number },
+      createdAt: { type: Date, default: Date.now },
+    },
+
     weeklyMealPlan: [
       {
         recipe: { type: mongoose.Schema.Types.ObjectId, ref: "Recipe" },

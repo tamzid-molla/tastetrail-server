@@ -13,6 +13,7 @@ import {
   toggleSavedRecipe,
   getUserCookingStats,
   getUserNutritionSummary,
+  setUserYearlyGoal,
   getUserCookingAnalytics,
 } from "./userController.js";
 import isAuthenticated from "../../middleware/authMiddleware.js";
@@ -35,6 +36,9 @@ router.get("/cooking-stats", isAuthenticated, getUserCookingStats);
 
 // User nutrition summary
 router.get("/nutrition-summary", isAuthenticated, getUserNutritionSummary);
+
+// User yearly goal
+router.post("/yearly-goal", isAuthenticated, setUserYearlyGoal);
 
 // User cooking analytics
 router.get("/cooking-analytics", isAuthenticated, getUserCookingAnalytics);
