@@ -16,16 +16,30 @@ export const addMealPlan = asyncHandler(async (req, res, next) => {
   // Check if recipe exists
   const recipeExists = await Recipe.findById(recipe);
   if (!recipeExists) return next(new ErrorHandler("Recipe not found", 404));
-  const mealPlan = await MealPlan.create({ user, recipe, date });
 
-  // Update user cooking stats (planned)
-  await User.findByIdAndUpdate(user, { $inc: { "cookingStats.totalMealsPlanned": 1 } });
+  try {
+    const mealPlan = await MealPlan.create({ user, recipe, date });
 
-  res.status(201).json({
-    success: true,
-    message: "Recipe added to meal plan",
-    mealPlan,
-  });
+    // Update user cooking stats (planned)
+    await User.findByIdAndUpdate(user, { $inc: { "cookingStats.totalMealsPlanned": 1 } });
+
+    res.status(201).json({
+      success: true,
+      message: "Recipe added to meal plan",
+      mealPlan,
+    });
+  } catch (error) {
+    // Check if it's a duplicate key error
+    if (error.code === 11000) {
+      return next(
+        new ErrorHandler(
+          "This recipe is already added to your meal plan for the selected date. Please choose a different date or recipe.",
+          400
+        )
+      );
+    }
+    return next(error);
+  }
 });
 
 // Get all meal plans for logged in user
@@ -104,7 +118,7 @@ export const deleteMealPlan = asyncHandler(async (req, res, next) => {
 
   // Update user cooking stats
   const userDoc = await User.findById(req.user._id).select(
-    "cookingStats.totalMealsPlanned cookingStats.totalMealsCooked",
+    "cookingStats.totalMealsPlanned cookingStats.totalMealsCooked"
   );
   const plannedNow = userDoc?.cookingStats?.totalMealsPlanned || 0;
   const cookedNow = userDoc?.cookingStats?.totalMealsCooked || 0;

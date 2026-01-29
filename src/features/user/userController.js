@@ -5,6 +5,7 @@ import generateToken from "../../utils/generateToken.js";
 import { User } from "./userModel.js";
 import { Recipe } from "../recipe/recipeModel.js";
 import fs from "fs";
+import mongoose from "mongoose";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
@@ -176,12 +177,10 @@ export const activateUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-// -------------------------
-// Saved recipes (Cookbook)
-// -------------------------
 
 export const getSavedRecipes = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
+  console.log(userId);
   const user = await User.findById(userId).populate({
     path: "savedRecipes",
     match: { status: "active" },
@@ -200,29 +199,41 @@ export const getSavedRecipes = asyncHandler(async (req, res, next) => {
 });
 
 // Toggle save/unsave recipe
-export const toggleSavedRecipe = asyncHandler(async (req, res, next) => {
-  const userId = req.user?._id;
+export const toggleSavedRecipe = asyncHandler(async (req, res) => {
   const { recipeId } = req.params;
-  if (!recipeId) return next(new ErrorHandler("Recipe id is required", 400));
-  if (!recipeId.match(/^[0-9a-fA-F]{24}$/)) return next(new ErrorHandler("Invalid recipe id", 400));
+  const userId = req.user._id;
+
+  if (!recipeId) throw new ErrorHandler("Recipe id is required", 400);
+  if (!mongoose.Types.ObjectId.isValid(recipeId))
+    throw new ErrorHandler("Invalid recipe id", 400);
 
   const recipeExists = await Recipe.findById(recipeId);
-  if (!recipeExists) return next(new ErrorHandler("Recipe not found", 404));
+  if (!recipeExists) throw new ErrorHandler("Recipe not found", 404);
 
-  const user = await User.findById(userId);
-  if (!user) return next(new ErrorHandler("User not found", 404));
+  // Check if already saved
+  const user = await User.findById(userId).select("savedRecipes");
+  const recipeObjectId =new mongoose.Types.ObjectId(recipeId);
+  const alreadySaved = user.savedRecipes.some(id => id.equals(recipeObjectId));
 
-  const alreadySaved = user.savedRecipes?.some((id) => id.toString() === recipeId);
   if (alreadySaved) {
-    user.savedRecipes = user.savedRecipes.filter((id) => id.toString() !== recipeId);
+    // Remove recipe
+    await User.updateOne(
+      { _id: userId },
+      { $pull: { savedRecipes: recipeObjectId } }
+    );
   } else {
-    user.savedRecipes.push(recipeId);
+    // Add recipe
+    await User.updateOne(
+      { _id: userId },
+      { $addToSet: { savedRecipes: recipeObjectId } }
+    );
   }
-  await user.save();
 
   res.status(200).json({
     success: true,
-    message: alreadySaved ? "Recipe removed from cookbook" : "Recipe saved to cookbook",
+    message: alreadySaved
+      ? "Recipe removed from cookbook"
+      : "Recipe saved to cookbook",
     saved: !alreadySaved,
   });
 });
