@@ -4,9 +4,28 @@ import ErrorHandler from "../../middleware/errorHandler.js";
 import { Recipe } from "./recipeModel.js";
 import { Category } from "../category/categoryModel.js";
 import Cuisine from "../cuisine/cuisineModel.js";
+import cloudinary from "../../config/cloudinary.js";
+import fs from "fs";
+
+export const getRecipeCount = asyncHandler(async (req, res, next) => {
+  const count = await Recipe.countDocuments({ status: "active" });
+  res.status(200).json({
+    success: true,
+    count,
+  });
+});
 
 export const createRecipe = asyncHandler(async (req, res, next) => {
-  const { title, ingredients, instructions, category, cuisine } = req.body;
+  // Handle FormData fields
+  const title = req.body.title;
+  const ingredients = JSON.parse(req.body.ingredients);
+  const instructions = req.body.instructions;
+  const category = req.body.category;
+  const cuisine = req.body.cuisine;
+  const cookingTime = req.body.cookingTime;
+  const calories = req.body.calories;
+  const isFeatured = req.body.isFeatured;
+
   if (!title || !ingredients || !instructions || !category || !cuisine) {
     return next(new ErrorHandler("Please provide all required fields", 400));
   }
@@ -16,8 +35,37 @@ export const createRecipe = asyncHandler(async (req, res, next) => {
   if (!categoryExists) return next(new ErrorHandler("Category not found", 404));
   const cuisineExists = await Cuisine.findById(cuisine);
   if (!cuisineExists) return next(new ErrorHandler("Cuisine not found", 404));
+
+  // Handle image upload
+  let imageUrl = "";
+  if (req.file) {
+    try {
+      const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        folder: "TasteTrailRecipes",
+        quality: "auto",
+        fetch_format: "auto",
+      });
+      imageUrl = result.secure_url;
+      // Delete local file after uploading to Cloudinary
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Failed to delete local file:", err);
+      });
+    } catch (error) {
+      console.error("Error uploading to Cloudinary:", error);
+      return next(new ErrorHandler("Failed to upload image", 500));
+    }
+  }
+
   const newRecipe = await Recipe.create({
-    ...req.body,
+    title,
+    ingredients,
+    instructions,
+    category,
+    cuisine,
+    cookingTime: cookingTime ? parseInt(cookingTime) : undefined,
+    calories: calories ? parseInt(calories) : undefined,
+    image: imageUrl,
+    isFeatured: isFeatured === "true" || isFeatured === true,
     createdBy: req.user._id,
   });
 
@@ -30,7 +78,21 @@ export const createRecipe = asyncHandler(async (req, res, next) => {
 
 //get all recipes
 export const getAllRecipes = asyncHandler(async (req, res, next) => {
-  const recipes = await Recipe.find({ status: "active" })
+  const { q } = req.query;
+
+  let query = { status: "active" };
+
+  // If search query exists, search in relevant fields
+  if (q) {
+    query.$or = [
+      { title: { $regex: q, $options: "i" } }, // Case insensitive search in title
+      { "category.name": { $regex: q, $options: "i" } }, // Search in category name
+      { "cuisine.name": { $regex: q, $options: "i" } }, // Search in cuisine name
+      { ingredients: { $elemMatch: { $regex: q, $options: "i" } } }, // Search in ingredients
+    ];
+  }
+
+  const recipes = await Recipe.find(query)
     .populate("category", "name _id")
     .populate("cuisine", "name _id")
     .populate("createdBy", "fullName email _id");
@@ -61,13 +123,43 @@ export const getSingleRecipe = asyncHandler(async (req, res, next) => {
 export const updateRecipe = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   if (!id) return next(new ErrorHandler("Please provide a recipe id", 400));
-  const { title, ingredients, instructions, category, cuisine, cookingTime, calories, image, isFeatured } = req.body;
+
+  // Handle FormData fields
+  const title = req.body.title;
+  const ingredients = JSON.parse(req.body.ingredients);
+  const instructions = req.body.instructions;
+  const category = req.body.category;
+  const cuisine = req.body.cuisine;
+  const cookingTime = req.body.cookingTime;
+  const calories = req.body.calories;
+  const isFeatured = req.body.isFeatured;
 
   if (!title || !ingredients || !instructions || !category || !cuisine) {
     return next(new ErrorHandler("Please provide all required fields", 400));
   }
+
   const recipe = await Recipe.findById(id);
   if (!recipe) return next(new ErrorHandler("Recipe not found", 404));
+
+  // Handle image upload if new image is provided
+  let imageUrl = recipe.image; // Keep existing image by default
+  if (req.file) {
+    try {
+      const result = await cloudinary.v2.uploader.upload(req.file.path, {
+        folder: "TasteTrailRecipes",
+        quality: "auto",
+        fetch_format: "auto",
+      });
+      imageUrl = result.secure_url;
+      // Delete local file after uploading to Cloudinary
+      fs.unlink(req.file.path, (err) => {
+        if (err) console.error("Failed to delete local file:", err);
+      });
+    } catch (error) {
+      console.error("Error uploading to Cloudinary:", error);
+      return next(new ErrorHandler("Failed to upload image", 500));
+    }
+  }
 
   // Update fields
   recipe.title = title;
@@ -75,10 +167,10 @@ export const updateRecipe = asyncHandler(async (req, res, next) => {
   recipe.instructions = instructions;
   recipe.category = category;
   recipe.cuisine = cuisine;
-  recipe.cookingTime = cookingTime;
-  recipe.calories = calories;
-  recipe.image = image;
-  recipe.isFeatured = isFeatured;
+  recipe.cookingTime = cookingTime ? parseInt(cookingTime) : undefined;
+  recipe.calories = calories ? parseInt(calories) : undefined;
+  recipe.image = imageUrl;
+  recipe.isFeatured = isFeatured === "true" || isFeatured === true;
 
   const updatedRecipe = await recipe.save();
   await updatedRecipe.populate([

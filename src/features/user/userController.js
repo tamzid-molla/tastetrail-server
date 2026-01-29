@@ -3,17 +3,17 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import ErrorHandler from "../../middleware/errorHandler.js";
 import generateToken from "../../utils/generateToken.js";
 import { User } from "./userModel.js";
-import fs from "fs"
+import fs from "fs";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new ErrorHandler("Please provide all required information", 400));
 
-  const { fullName, email, password, } = req.body;
+  const { fullName, email, password } = req.body;
   if (!fullName || !email || !password) {
     return next(new ErrorHandler("All fields are required", 400));
   }
 
-   let imageUrl = "";
+  let imageUrl = "";
   if (req.file) {
     const result = await cloudinary.v2.uploader.upload(req.file.path, {
       folder: "TasteTrailUsers",
@@ -62,15 +62,97 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
   });
 });
 
+//get user count
+export const getUserCount = asyncHandler(async (req, res, next) => {
+  const count = await User.countDocuments();
+  res.status(200).json({
+    success: true,
+    count,
+  });
+});
 
 //logout user
 export const logoutUser = asyncHandler(async (req, res, next) => {
-  res.cookie("token", null, {
+  res.cookie("token", "", {
     httpOnly: true,
-    expires: new Date(Date.now()),
+    expires: new Date(0),
   });
   res.status(200).json({
     success: true,
     message: "Logout successful",
+  });
+});
+
+// Get all users
+export const getAllUsers = asyncHandler(async (req, res, next) => {
+  const { q } = req.query;
+
+  let query = {};
+
+  // If search query exists, search across multiple fields
+  if (q) {
+    query = {
+      $or: [{ fullName: { $regex: q, $options: "i" } }, { email: { $regex: q, $options: "i" } }],
+    };
+  }
+
+  const users = await User.find(query).select("-password").sort({ createdAt: -1 });
+  res.status(200).json({
+    success: true,
+    message: "Users fetched successfully",
+    users,
+  });
+});
+
+// Update user role
+export const updateUserRole = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (!role) return next(new ErrorHandler("Role is required", 400));
+
+  // Validate role
+  if (!["user", "admin"].includes(role)) {
+    return next(new ErrorHandler("Invalid role. Role must be 'user' or 'admin'", 400));
+  }
+
+  const user = await User.findByIdAndUpdate(id, { role }, { new: true }).select("-password");
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  res.status(200).json({
+    success: true,
+    message: "User role updated successfully",
+    user,
+  });
+});
+
+// Suspend user
+export const suspendUser = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const user = await User.findByIdAndUpdate(id, { isSuspended: true }, { new: true }).select("-password");
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  res.status(200).json({
+    success: true,
+    message: "User suspended successfully",
+    user,
+  });
+});
+
+// Activate user
+export const activateUser = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+
+  const user = await User.findByIdAndUpdate(id, { isSuspended: false }, { new: true }).select("-password");
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  res.status(200).json({
+    success: true,
+    message: "User activated successfully",
+    user,
   });
 });
