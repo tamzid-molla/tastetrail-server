@@ -27,10 +27,10 @@ export const allCuisines = asyncHandler(async (req, res, next) => {
 
   let query = {};
 
-  // If search query exists, search in name field
+ 
   if (q) {
     query = {
-      name: { $regex: q, $options: "i" }, // Case insensitive search in name
+      name: { $regex: q, $options: "i" }, 
     };
   }
 

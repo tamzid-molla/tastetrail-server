@@ -8,7 +8,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
   if (!req.body) return next(new ErrorHandler("Please provide a name for the category", 400));
   const { name, description } = req.body;
   if (!name) return next(new ErrorHandler("Please provide a name for the category", 400));
-  //format name
   const formattedName = capitalizeFirstLetter(name);
 
   const isExists = await Category.findOne({ name: { $regex: `^${formattedName}$`, $options: "i" } });
@@ -29,7 +28,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
 export const getCategoryCount = asyncHandler(async (req, res, next) => {
   const count = await Category.countDocuments();
 
-  // Categories created between last Friday and this Friday (inclusive)
   const now = new Date();
   const end = new Date(now);
   const day = end.getDay(); // 0 = Sun, 5 = Fri
@@ -52,26 +50,24 @@ export const getCategoryCount = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Get all categories
+
 export const allCategory = asyncHandler(async (req, res, next) => {
   // Get search query from request params
   const { q } = req.query;
 
   let query = {};
 
-  // If search query exists, search in name and description fields
   if (q) {
     query = {
       $or: [
-        { name: { $regex: q, $options: "i" } }, // Case insensitive search in name
-        { description: { $regex: q, $options: "i" } }, // Case insensitive search in description
+        { name: { $regex: q, $options: "i" } }, 
+        { description: { $regex: q, $options: "i" } }, 
       ],
     };
   }
 
   const categories = await Category.find(query);
 
-  // Add recipe count for each category
   const categoriesWithCounts = await Promise.all(
     categories.map(async (category) => {
       const recipeCount = await Recipe.countDocuments({ category: category._id });

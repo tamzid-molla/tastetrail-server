@@ -55,7 +55,6 @@ export const getRecommendedRecipes = async (userId, limit = 12) => {
     }
   }
 
-  // Fallback: if insufficient data or no cooked recipes, show trending/top-rated
   if (recommended.length < limit) {
     const more = await Recipe.find({ status: "active" })
       .sort({ averageRating: -1, totalReviews: -1 })

@@ -68,11 +68,9 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
 //get user count
 export const getUserCount = asyncHandler(async (req, res, next) => {
   const count = await User.countDocuments();
-
-  // Users registered between last Friday and this Friday (inclusive)
   const now = new Date();
   const end = new Date(now);
-  const day = end.getDay(); // 0 = Sun, 5 = Fri
+  const day = end.getDay(); 
   const diffToFriday = (5 - day + 7) % 7;
   end.setHours(23, 59, 59, 999);
   end.setDate(end.getDate() + diffToFriday);
@@ -109,8 +107,6 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
   const { q } = req.query;
 
   let query = {};
-
-  // If search query exists, search across multiple fields
   if (q) {
     query = {
       $or: [{ fullName: { $regex: q, $options: "i" } }, { email: { $regex: q, $options: "i" } }],
@@ -269,9 +265,8 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   const user = await User.findById(userId);
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  // Get cooked meals for the specified year
-  const startDate = new Date(targetYear, 0, 1); // Jan 1st
-  const endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999); // Dec 31st
+  const startDate = new Date(targetYear, 0, 1); 
+  const endDate = new Date(targetYear, 11, 31, 23, 59, 59, 999); 
 
   const cookedMeals = await MealPlan.find({
     user: userId,
@@ -313,7 +308,6 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
     }
   });
 
-  // Calculate streak (consecutive days with cooked meals)
   const datesWithMeals = [...new Set(cookedMeals.map((meal) => new Date(meal.updatedAt).toDateString()))].sort();
 
   let currentStreak = 0;
@@ -356,13 +350,13 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   const cuisineData = Object.entries(cuisineCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5); // Top 5 cuisines
+    .slice(0, 5); 
 
   // Format category data
   const categoryData = Object.entries(categoryCount)
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
-    .slice(0, 5); // Top 5 categories
+    .slice(0, 5); 
 
   const totalMeals = cookedMeals.length;
 
@@ -421,8 +415,8 @@ export const getUserNutritionSummary = asyncHandler(async (req, res, next) => {
   // Calculate averages
   const avgCaloriesPerMeal = totalMeals > 0 ? Math.round(totalCalories / totalMeals) : 0;
 
-  // Estimate macro nutrients (basic estimation)
-  // Protein: ~20% of calories, Carbs: ~50%, Fat: ~30%
+
+  // Protein 20% of calories, Carbs 50%, Fat 30%
   const proteinGrams = Math.round((totalCalories * 0.2) / 4); // 4 cal per gram
   const carbGrams = Math.round((totalCalories * 0.5) / 4); // 4 cal per gram
   const fatGrams = Math.round((totalCalories * 0.3) / 9); // 9 cal per gram

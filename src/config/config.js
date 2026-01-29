@@ -8,7 +8,9 @@ const _config = {
     JWT_SECRET: process.env.JWT_SECRET,
     CLOUD_NAME: process.env.CLOUD_NAME,
     CLOUD_API_KEY: process.env.CLOUD_API_KEY,
-    CLOUD_API_SECRET:process.env.CLOUD_API_SECRET
+    CLOUD_API_SECRET: process.env.CLOUD_API_SECRET,
+    FRONTEND_URL_1: process.env.FRONTEND_URL_1,
+    FRONTEND_URL_2: process.env.FRONTEND_URL_2
 }
 
 const config = Object.freeze(_config);

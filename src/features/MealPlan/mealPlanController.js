@@ -29,7 +29,6 @@ export const addMealPlan = asyncHandler(async (req, res, next) => {
       mealPlan,
     });
   } catch (error) {
-    // Check if it's a duplicate key error
     if (error.code === 11000) {
       return next(
         new ErrorHandler(
@@ -78,9 +77,6 @@ export const updateMealPlanStatus = asyncHandler(async (req, res, next) => {
     mealPlan.status = status;
     await mealPlan.save();
 
-    // Update user cooking stats (cooked)
-    // - increment when transitioning into cooked
-    // - decrement when transitioning out of cooked
     const userId = req.user._id;
     if (prevStatus !== "cooked" && status === "cooked") {
       await User.findByIdAndUpdate(userId, {
@@ -110,7 +106,6 @@ export const updateMealPlanStatus = asyncHandler(async (req, res, next) => {
 export const deleteMealPlan = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   if (!id) return next(new ErrorHandler("Please provide a meal plan id", 400));
-  // Ensure user can only delete their own meal plan items
   const mealPlan = await MealPlan.findOne({ _id: id, user: req.user._id });
   if (!mealPlan) return next(new ErrorHandler("Meal plan not found", 404));
 

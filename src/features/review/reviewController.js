@@ -80,7 +80,6 @@ export const approveReview = asyncHandler(async (req, res, next) => {
 export const getReviewCount = asyncHandler(async (req, res, next) => {
   const count = await Review.countDocuments();
 
-  // Reviews created between last Friday and this Friday (inclusive)
   const now = new Date();
   const end = new Date(now);
   const day = end.getDay(); // 0 = Sun, 5 = Fri

@@ -15,7 +15,6 @@ const router = express.Router();
 router.post("/", isAuthenticated, adminOnly, createCuisine);
 router.delete("/:id", isAuthenticated, adminOnly, deleteCuisine);
 router.put("/:id", isAuthenticated, adminOnly, updateCuisine);
-// List cuisines is needed for normal users (filters)
 router.get("/", isAuthenticated, allCuisines);
 router.get("/count", isAuthenticated, adminOnly, getCuisineCount);
 router.get("/:id", isAuthenticated, singleCuisine);

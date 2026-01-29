@@ -24,7 +24,7 @@ const router = express.Router();
 router.post("/auth/register", upload.single("profilePhoto"), registerUser);
 router.post("/auth/login", loginUser);
 router.get("/auth/me", isAuthenticated, getCurrentUser);
-router.get("/auth/count", isAuthenticated, adminOnly, getUserCount); // Get user count
+router.get("/auth/count", isAuthenticated, adminOnly, getUserCount); 
 router.post("/auth/logout", isAuthenticated, logoutUser);
 
 // Normal user: cookbook (saved recipes)
@@ -44,9 +44,9 @@ router.post("/yearly-goal", isAuthenticated, setUserYearlyGoal);
 router.get("/cooking-analytics", isAuthenticated, getUserCookingAnalytics);
 
 // Admin routes
-router.get("/", isAuthenticated, adminOnly, getAllUsers); // Get all users
-router.put("/:id/role", isAuthenticated, adminOnly, updateUserRole); // Update user role
-router.put("/:id/suspend", isAuthenticated, adminOnly, suspendUser); // Suspend user
-router.put("/:id/activate", isAuthenticated, adminOnly, activateUser); // Activate user
+router.get("/", isAuthenticated, adminOnly, getAllUsers); 
+router.put("/:id/role", isAuthenticated, adminOnly, updateUserRole); 
+router.put("/:id/suspend", isAuthenticated, adminOnly, suspendUser); 
+router.put("/:id/activate", isAuthenticated, adminOnly, activateUser); 
 
 export default router;

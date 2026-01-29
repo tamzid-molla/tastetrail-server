@@ -10,10 +10,11 @@ import reviewRouter from "./features/review/reviewRoute.js";
 import recommendationsRouter from "./features/recommendation/recommendationsRoute.js";
 import mealPlanRouter from "./features/MealPlan/mealPlanRoute.js";
 import { errorHandlerMiddleware } from './middleware/errorHandler.js';
+import config from './config/config.js';
 
 //middlewares 
 app.use(cors({
-    origin: ["http://localhost:3000","http://localhost:3001"],
+    origin: [config.FRONTEND_URL_1, config.FRONTEND_URL_2],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
