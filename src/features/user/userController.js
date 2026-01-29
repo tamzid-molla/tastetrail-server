@@ -4,6 +4,7 @@ import ErrorHandler from "../../middleware/errorHandler.js";
 import generateToken from "../../utils/generateToken.js";
 import { User } from "./userModel.js";
 import { Recipe } from "../recipe/recipeModel.js";
+import { MealPlan } from "../MealPlan/mealPlanModel.js";
 import fs from "fs";
 import mongoose from "mongoose";
 
@@ -195,6 +196,38 @@ export const getSavedRecipes = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     success: true,
     recipes: user.savedRecipes || [],
+  });
+});
+
+// Get user cooking statistics
+export const getUserCookingStats = asyncHandler(async (req, res, next) => {
+  const userId = req.user?._id;
+  const user = await User.findById(userId).select("cookingStats");
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  // Get recent cooked meals
+  const recentCookedMeals = await MealPlan.find({ 
+    user: userId, 
+    status: "cooked" 
+  })
+  .sort({ updatedAt: -1 })
+  .limit(10)
+  .populate({
+    path: "recipe",
+    select: "title image cookingTime calories",
+    populate: [
+      { path: "category", select: "name" },
+      { path: "cuisine", select: "name" }
+    ]
+  });
+
+  res.status(200).json({
+    success: true,
+    stats: {
+      totalMealsPlanned: user.cookingStats?.totalMealsPlanned || 0,
+      totalMealsCooked: user.cookingStats?.totalMealsCooked || 0,
+      recentCookedMeals: recentCookedMeals || []
+    }
   });
 });
 
