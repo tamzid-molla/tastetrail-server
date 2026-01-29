@@ -230,88 +230,6 @@ export const getUserCookingStats = asyncHandler(async (req, res, next) => {
   });
 });
 
-// Set or update user cooking goal
-export const setUserCookingGoal = asyncHandler(async (req, res) => {
-  const userId = req.user?._id;
-  const { year, targetMeals } = req.body;
-  console.log(year, targetMeals);
-
-  if (!year || !targetMeals) {
-    throw new ErrorHandler("Year and target meals are required", 400);
-  }
-
-  if (targetMeals <= 0) {
-    throw new ErrorHandler("Target meals must be greater than 0", 400);
-  }
-
-  // Check if current goal already exists for this year
-  const currentUser = await User.findById(userId).select("currentGoal");
-  console.log("Current user goals:", currentUser?.currentGoal);
-  console.log("Checking year:", year, "Current value:", currentUser?.currentGoal?.year);
-  if (currentUser?.currentGoal?.year === year) {
-    console.log("Goal already exists for this year, throwing error");
-    throw new ErrorHandler(`Goal for ${year} already set. You cannot change it until next year.`, 400);
-  }
-  
-  // Calculate expiry date (end of current year)
-  const expiryDate = new Date(year, 11, 31, 23, 59, 59, 999); // Dec 31st of the given year
-  console.log("Setting goal for year:", year, "with expiry:", expiryDate);
-  
-  // Set the current goal and add to cookingGoals map
-  const update = {};
-  update[`cookingGoals.${year}`] = targetMeals;
-  update.currentGoal = {
-    targetMeals,
-    year,
-    expiryDate,
-    createdAt: new Date()
-  };
-  
-  const result = await User.updateOne(
-    { _id: userId },
-    { $set: update }
-  );
-  
-  console.log("Update result:", result);
-  
-  if (result.matchedCount === 0) {
-    throw new ErrorHandler("User not found", 404);
-  }
-  res.status(200).json({
-    success: true,
-    message: `Cooking goal set to ${targetMeals} meals for ${year}`,
-    goal: { year, targetMeals },
-  });
-});
-
-// Get user goals (current and history)
-export const getUserGoals = asyncHandler(async (req, res, next) => {
-  const userId = req.user?._id;
-  
-  const user = await User.findById(userId).select("currentGoal goalHistory");
-  if (!user) return next(new ErrorHandler("User not found", 404));
-  
-  // Check if current goal has expired
-  const now = new Date();
-  console.log("Current date:", now);
-  console.log("User current goal:", user.currentGoal);
-  let currentGoal = user.currentGoal;
-  
-  if (currentGoal && currentGoal.expiryDate && now > currentGoal.expiryDate) {
-    console.log("Goal has expired, setting to null");
-    // Goal has expired, return null for current goal
-    currentGoal = null;
-  } else {
-    console.log("Goal is still valid or doesn't exist");
-  }
-  
-  res.status(200).json({
-    success: true,
-    currentGoal,
-    goalHistory: user.goalHistory || []
-  });
-});
-
 // Get user cooking analytics
 export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
@@ -322,37 +240,6 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
   // Get user to check if exists
   const user = await User.findById(userId);
   if (!user) return next(new ErrorHandler("User not found", 404));
-  
-  // Check if current goal has expired and move to history if needed
-  const now = new Date();
-  if (user.currentGoal && user.currentGoal.expiryDate && now > user.currentGoal.expiryDate) {
-    // Move current goal to history
-    const completedGoal = {
-      targetMeals: user.currentGoal.targetMeals,
-      year: user.currentGoal.year,
-      achievedMeals: totalMeals || 0,
-      completionPercentage: user.currentGoal.targetMeals > 0 ? 
-        Math.min(Math.round((totalMeals / user.currentGoal.targetMeals) * 100), 100) : 0,
-      createdAt: user.currentGoal.createdAt,
-      completedAt: now
-    };
-    
-    // Update user: add to history and clear current goal
-    await User.updateOne(
-      { _id: userId },
-      { 
-        $push: { goalHistory: completedGoal },
-        $unset: { currentGoal: 1 }
-      }
-    );
-    
-    // Refresh user data
-    const refreshedUser = await User.findById(userId);
-    if (refreshedUser) {
-      user.currentGoal = refreshedUser.currentGoal;
-      user.goalHistory = refreshedUser.goalHistory;
-    }
-  }
 
   // Get cooked meals for the specified year
   const startDate = new Date(targetYear, 0, 1); // Jan 1st
@@ -450,16 +337,12 @@ export const getUserCookingAnalytics = asyncHandler(async (req, res, next) => {
     .slice(0, 5); // Top 5 categories
 
   const totalMeals = cookedMeals.length;
-  const goal = user.cookingGoals?.[targetYear] || 0;
-  const progressPercentage = goal > 0 ? Math.min(Math.round((totalMeals / goal) * 100), 100) : 0;
 
   res.status(200).json({
     success: true,
     analytics: {
       year: targetYear,
       totalMeals,
-      goal,
-      progressPercentage,
       streak: {
         current: currentStreak,
         max: maxStreak,

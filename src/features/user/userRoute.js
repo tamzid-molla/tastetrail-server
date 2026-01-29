@@ -13,9 +13,7 @@ import {
   toggleSavedRecipe,
   getUserCookingStats,
   getUserNutritionSummary,
-  setUserCookingGoal,
   getUserCookingAnalytics,
-  getUserGoals,
 } from "./userController.js";
 import isAuthenticated from "../../middleware/authMiddleware.js";
 import adminOnly from "../../middleware/admin.js";
@@ -38,10 +36,8 @@ router.get("/cooking-stats", isAuthenticated, getUserCookingStats);
 // User nutrition summary
 router.get("/nutrition-summary", isAuthenticated, getUserNutritionSummary);
 
-// User cooking goals and analytics
-router.post("/cooking-goal", isAuthenticated, setUserCookingGoal);
+// User cooking analytics
 router.get("/cooking-analytics", isAuthenticated, getUserCookingAnalytics);
-router.get("/goals", isAuthenticated, getUserGoals);
 
 // Admin routes
 router.get("/", isAuthenticated, adminOnly, getAllUsers); // Get all users
