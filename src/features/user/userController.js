@@ -3,6 +3,7 @@ import { asyncHandler } from "../../middleware/asyncHandler.js";
 import ErrorHandler from "../../middleware/errorHandler.js";
 import generateToken from "../../utils/generateToken.js";
 import { User } from "./userModel.js";
+import { Recipe } from "../recipe/recipeModel.js";
 import fs from "fs";
 
 export const registerUser = asyncHandler(async (req, res, next) => {
@@ -154,5 +155,56 @@ export const activateUser = asyncHandler(async (req, res, next) => {
     success: true,
     message: "User activated successfully",
     user,
+  });
+});
+
+// -------------------------
+// Saved recipes (Cookbook)
+// -------------------------
+
+export const getSavedRecipes = asyncHandler(async (req, res, next) => {
+  const userId = req.user?._id;
+  const user = await User.findById(userId).populate({
+    path: "savedRecipes",
+    match: { status: "active" },
+    populate: [
+      { path: "category", select: "name _id" },
+      { path: "cuisine", select: "name _id" },
+      { path: "createdBy", select: "fullName email _id" },
+    ],
+  });
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  res.status(200).json({
+    success: true,
+    recipes: user.savedRecipes || [],
+  });
+});
+
+// Toggle save/unsave recipe
+export const toggleSavedRecipe = asyncHandler(async (req, res, next) => {
+  const userId = req.user?._id;
+  const { recipeId } = req.params;
+  if (!recipeId) return next(new ErrorHandler("Recipe id is required", 400));
+  if (!recipeId.match(/^[0-9a-fA-F]{24}$/)) return next(new ErrorHandler("Invalid recipe id", 400));
+
+  const recipeExists = await Recipe.findById(recipeId);
+  if (!recipeExists) return next(new ErrorHandler("Recipe not found", 404));
+
+  const user = await User.findById(userId);
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  const alreadySaved = user.savedRecipes?.some((id) => id.toString() === recipeId);
+  if (alreadySaved) {
+    user.savedRecipes = user.savedRecipes.filter((id) => id.toString() !== recipeId);
+  } else {
+    user.savedRecipes.push(recipeId);
+  }
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: alreadySaved ? "Recipe removed from cookbook" : "Recipe saved to cookbook",
+    saved: !alreadySaved,
   });
 });

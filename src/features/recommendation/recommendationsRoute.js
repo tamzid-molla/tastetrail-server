@@ -3,6 +3,6 @@ import { recommendations } from "./recommendationController.js";
 import isAuthenticated from "../../middleware/authMiddleware.js";
 const router = express.Router();
 
-router.get("/", isAuthenticated, recommendations);
+router.get("/personalized", isAuthenticated, recommendations);
 
 export default router;

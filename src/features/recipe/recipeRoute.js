@@ -15,9 +15,9 @@ const router = express.Router();
 
 //add recipe
 router.post("/add", isAuthenticated, adminOnly, upload.single("image"), createRecipe);
-router.get("/all", getAllRecipes);
-router.get("/count", getRecipeCount); // Get recipe count
-router.get("/single/:id", getSingleRecipe);
+router.get("/all", isAuthenticated, getAllRecipes);
+router.get("/count", isAuthenticated, adminOnly, getRecipeCount); // Get recipe count (Admin)
+router.get("/single/:id", isAuthenticated, getSingleRecipe);
 router.put("/update/:id", isAuthenticated, adminOnly, upload.single("image"), updateRecipe);
 router.delete("/delete/:id", isAuthenticated, adminOnly, deleteRecipe);
 

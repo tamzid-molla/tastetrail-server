@@ -9,6 +9,8 @@ import {
   updateUserRole,
   suspendUser,
   activateUser,
+  getSavedRecipes,
+  toggleSavedRecipe,
 } from "./userController.js";
 import isAuthenticated from "../../middleware/authMiddleware.js";
 import adminOnly from "../../middleware/admin.js";
@@ -20,6 +22,10 @@ router.post("/auth/login", loginUser);
 router.get("/auth/me", isAuthenticated, getCurrentUser);
 router.get("/auth/count", isAuthenticated, adminOnly, getUserCount); // Get user count
 router.post("/auth/logout", isAuthenticated, logoutUser);
+
+// Normal user: cookbook (saved recipes)
+router.get("/saved", isAuthenticated, getSavedRecipes);
+router.post("/saved/:recipeId", isAuthenticated, toggleSavedRecipe);
 
 // Admin routes
 router.get("/", isAuthenticated, adminOnly, getAllUsers); // Get all users

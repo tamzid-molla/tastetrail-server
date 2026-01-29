@@ -78,26 +78,54 @@ export const createRecipe = asyncHandler(async (req, res, next) => {
 
 //get all recipes
 export const getAllRecipes = asyncHandler(async (req, res, next) => {
-  const { q } = req.query;
+  const { q, category, cuisine, page = "1", limit = "12", sort = "latest" } = req.query;
 
-  let query = { status: "active" };
+  const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+  const limitNumRaw = parseInt(limit, 10) || 12;
+  const limitNum = Math.min(Math.max(limitNumRaw, 1), 100);
+  const skip = (pageNum - 1) * limitNum;
 
-  // If search query exists, search in relevant fields
-  if (q) {
+  const query = { status: "active" };
+
+  // Filters
+  if (category) {
+    if (!mongoose.Types.ObjectId.isValid(category)) return next(new ErrorHandler("Invalid category", 400));
+    query.category = category;
+  }
+  if (cuisine) {
+    if (!mongoose.Types.ObjectId.isValid(cuisine)) return next(new ErrorHandler("Invalid cuisine", 400));
+    query.cuisine = cuisine;
+  }
+
+  // Search (name or ingredient)
+  if (q && String(q).trim()) {
+    const term = String(q).trim();
     query.$or = [
-      { title: { $regex: q, $options: "i" } }, // Case insensitive search in title
-      { "category.name": { $regex: q, $options: "i" } }, // Search in category name
-      { "cuisine.name": { $regex: q, $options: "i" } }, // Search in cuisine name
-      { ingredients: { $elemMatch: { $regex: q, $options: "i" } } }, // Search in ingredients
+      { title: { $regex: term, $options: "i" } },
+      { ingredients: { $elemMatch: { $regex: term, $options: "i" } } },
     ];
   }
 
+  // Sorting
+  let sortQuery = { createdAt: -1 };
+  if (sort === "trending") sortQuery = { averageRating: -1, totalReviews: -1, createdAt: -1 };
+  if (sort === "topRated") sortQuery = { averageRating: -1, createdAt: -1 };
+
+  const total = await Recipe.countDocuments(query);
+
   const recipes = await Recipe.find(query)
+    .sort(sortQuery)
+    .skip(skip)
+    .limit(limitNum)
     .populate("category", "name _id")
     .populate("cuisine", "name _id")
     .populate("createdBy", "fullName email _id");
+
   res.status(200).json({
     success: true,
+    total,
+    page: pageNum,
+    limit: limitNum,
     recipes,
   });
 });
