@@ -15,7 +15,6 @@ import config from './config/config.js';
 //middlewares 
 app.use(cors({
     origin: [config.FRONTEND_URL_1, config.FRONTEND_URL_2],
-    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
 app.use(express.json());
