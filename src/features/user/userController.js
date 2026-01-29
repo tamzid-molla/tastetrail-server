@@ -178,7 +178,6 @@ export const activateUser = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 export const getSavedRecipes = asyncHandler(async (req, res, next) => {
   const userId = req.user?._id;
   console.log(userId);
@@ -206,28 +205,104 @@ export const getUserCookingStats = asyncHandler(async (req, res, next) => {
   if (!user) return next(new ErrorHandler("User not found", 404));
 
   // Get recent cooked meals
-  const recentCookedMeals = await MealPlan.find({ 
-    user: userId, 
-    status: "cooked" 
+  const recentCookedMeals = await MealPlan.find({
+    user: userId,
+    status: "cooked",
   })
-  .sort({ updatedAt: -1 })
-  .limit(10)
-  .populate({
-    path: "recipe",
-    select: "title image cookingTime calories",
-    populate: [
-      { path: "category", select: "name" },
-      { path: "cuisine", select: "name" }
-    ]
-  });
+    .sort({ updatedAt: -1 })
+    .limit(10)
+    .populate({
+      path: "recipe",
+      select: "title image cookingTime calories",
+      populate: [
+        { path: "category", select: "name" },
+        { path: "cuisine", select: "name" },
+      ],
+    });
 
   res.status(200).json({
     success: true,
     stats: {
       totalMealsPlanned: user.cookingStats?.totalMealsPlanned || 0,
       totalMealsCooked: user.cookingStats?.totalMealsCooked || 0,
-      recentCookedMeals: recentCookedMeals || []
+      recentCookedMeals: recentCookedMeals || [],
+    },
+  });
+});
+
+// Get user nutrition summary
+export const getUserNutritionSummary = asyncHandler(async (req, res, next) => {
+  const userId = req.user?._id;
+
+  // Get cooked meals from last 7 days
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const recentMeals = await MealPlan.find({
+    user: userId,
+    status: "cooked",
+    updatedAt: { $gte: oneWeekAgo },
+  }).populate({
+    path: "recipe",
+    select: "title calories cookingTime",
+  });
+
+  // Calculate weekly totals
+  let totalCalories = 0;
+  let totalMeals = recentMeals.length;
+
+  recentMeals.forEach((meal) => {
+    if (meal.recipe?.calories) {
+      totalCalories += meal.recipe.calories;
     }
+  });
+
+  // Calculate averages
+  const avgCaloriesPerMeal = totalMeals > 0 ? Math.round(totalCalories / totalMeals) : 0;
+
+  // Estimate macro nutrients (basic estimation)
+  // Protein: ~20% of calories, Carbs: ~50%, Fat: ~30%
+  const proteinGrams = Math.round((totalCalories * 0.2) / 4); // 4 cal per gram
+  const carbGrams = Math.round((totalCalories * 0.5) / 4); // 4 cal per gram
+  const fatGrams = Math.round((totalCalories * 0.3) / 9); // 9 cal per gram
+
+  // Get daily trend data
+  const dailyData = [];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const startDate = new Date(date.setHours(0, 0, 0, 0));
+    const endDate = new Date(date.setHours(23, 59, 59, 999));
+
+    const dayMeals = recentMeals.filter((meal) => meal.updatedAt >= startDate && meal.updatedAt <= endDate);
+
+    let dayCalories = 0;
+    dayMeals.forEach((meal) => {
+      if (meal.recipe?.calories) {
+        dayCalories += meal.recipe.calories;
+      }
+    });
+
+    dailyData.push({
+      date: startDate.toISOString().split("T")[0],
+      calories: dayCalories,
+      meals: dayMeals.length,
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    summary: {
+      weeklyCalories: totalCalories,
+      weeklyMeals: totalMeals,
+      averageCaloriesPerMeal: avgCaloriesPerMeal,
+      macroNutrients: {
+        protein: proteinGrams,
+        carbohydrates: carbGrams,
+        fat: fatGrams,
+      },
+      dailyTrend: dailyData,
+    },
   });
 });
 
@@ -237,36 +312,27 @@ export const toggleSavedRecipe = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
   if (!recipeId) throw new ErrorHandler("Recipe id is required", 400);
-  if (!mongoose.Types.ObjectId.isValid(recipeId))
-    throw new ErrorHandler("Invalid recipe id", 400);
+  if (!mongoose.Types.ObjectId.isValid(recipeId)) throw new ErrorHandler("Invalid recipe id", 400);
 
   const recipeExists = await Recipe.findById(recipeId);
   if (!recipeExists) throw new ErrorHandler("Recipe not found", 404);
 
   // Check if already saved
   const user = await User.findById(userId).select("savedRecipes");
-  const recipeObjectId =new mongoose.Types.ObjectId(recipeId);
-  const alreadySaved = user.savedRecipes.some(id => id.equals(recipeObjectId));
+  const recipeObjectId = new mongoose.Types.ObjectId(recipeId);
+  const alreadySaved = user.savedRecipes.some((id) => id.equals(recipeObjectId));
 
   if (alreadySaved) {
     // Remove recipe
-    await User.updateOne(
-      { _id: userId },
-      { $pull: { savedRecipes: recipeObjectId } }
-    );
+    await User.updateOne({ _id: userId }, { $pull: { savedRecipes: recipeObjectId } });
   } else {
     // Add recipe
-    await User.updateOne(
-      { _id: userId },
-      { $addToSet: { savedRecipes: recipeObjectId } }
-    );
+    await User.updateOne({ _id: userId }, { $addToSet: { savedRecipes: recipeObjectId } });
   }
 
   res.status(200).json({
     success: true,
-    message: alreadySaved
-      ? "Recipe removed from cookbook"
-      : "Recipe saved to cookbook",
+    message: alreadySaved ? "Recipe removed from cookbook" : "Recipe saved to cookbook",
     saved: !alreadySaved,
   });
 });
