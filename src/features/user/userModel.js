@@ -57,6 +57,28 @@ const userSchema = new mongoose.Schema(
       lastCookedRecipe: { type: mongoose.Schema.Types.ObjectId, ref: "Recipe" },
     },
 
+    cookingGoals: {
+      type: Map,
+      of: Number,
+      default: {}
+    },
+        
+    currentGoal: {
+      targetMeals: { type: Number },
+      year: { type: Number },
+      expiryDate: { type: Date },
+      createdAt: { type: Date, default: Date.now }
+    },
+        
+    goalHistory: [{
+      targetMeals: { type: Number },
+      year: { type: Number },
+      achievedMeals: { type: Number, default: 0 },
+      completionPercentage: { type: Number, default: 0 },
+      createdAt: { type: Date, default: Date.now },
+      completedAt: { type: Date }
+    }],
+
     savedRecipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "Recipe" }],
 
     weeklyMealPlan: [
@@ -67,7 +89,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 //hashed password
